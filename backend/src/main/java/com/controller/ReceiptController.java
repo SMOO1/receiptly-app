@@ -28,13 +28,14 @@ public class ReceiptController {
             }
 
             String filepath = UPLOAD_DIR + file.getOriginalFilename();
-            file.transferTo(new File(filepath)); 
+            File destination = new File(filepath).getAbsoluteFile();
+            file.transferTo(destination);
 
-            return "File uploaded successfully"; 
+            return "File uploaded successfully " + destination.getPath(); 
         }
         catch(IOException e){
             e.printStackTrace();
-            return "Upload failed";
+            return "Upload failed: " + e.getMessage();
         }
 
     }
