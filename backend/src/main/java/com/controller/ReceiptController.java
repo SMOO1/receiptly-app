@@ -32,7 +32,7 @@ public class ReceiptController {
 
             return "File uploaded successfully"; 
         }
-        catch(IOexception e){
+        catch(IOException e){
             e.printStackTrace();
             return "Upload failed";
         }
