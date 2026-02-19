@@ -3,8 +3,20 @@ package com.receiptly.receiptly_backend.controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.receiptly.receiptly_backend.repository.ReceiptRepository;
+
+import model.Receipt;
+
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
+
 
 
 @RestController
@@ -12,31 +24,26 @@ import java.io.IOException;
 @CrossOrigin 
 public class ReceiptController {
 
-    private static final String UPLOAD_DIR = "uploads/";
+    public ReceiptRepository receiptRepository; 
 
-    @PostMapping("/upload")
-    public String uploadReceipt(@RequestParam("file") MultipartFile file) {
-        
-        if(file.isEmpty()){
-            return "No file uploaded"; 
-        }
-
-        try {
-            File directory = new File(UPLOAD_DIR);
-            if(!directory.exists()){
-                directory.mkdirs(); 
-            }
-
-            String filepath = UPLOAD_DIR + file.getOriginalFilename();
-            File destination = new File(filepath).getAbsoluteFile();
-            file.transferTo(destination);
-
-            return "File uploaded successfully " + destination.getPath(); 
-        }
-        catch(IOException e){
-            e.printStackTrace();
-            return "Upload failed: " + e.getMessage();
-        }
-
+    public ReceiptController(ReceiptRepository receiptRepository){
+        this.receiptRepository = receiptRepository; 
     }
+
+
+    @GetMapping
+    public List<Receipt> getAllReceipts() {
+        return receiptRepository.findAll(); 
+    }
+
+    @PostMapping
+    public Receipt createReceipt(@RequestBody Receipt receipt) {
+        
+        return  receiptRepository.save(receipt);
+    }
+    
+
+    
+    
+    
 }
