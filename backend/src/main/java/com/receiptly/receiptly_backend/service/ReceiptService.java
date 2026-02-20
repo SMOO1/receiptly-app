@@ -1,5 +1,6 @@
 package com.receiptly.receiptly_backend.service;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID; 
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class ReceiptService {
     }
 
     public Receipt createreceipt(Receipt receipt){
+        receipt.setCreated_at(OffsetDateTime.now());
         return receiptRepository.save(receipt);
     }
 
