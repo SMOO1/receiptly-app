@@ -37,7 +37,7 @@ public class ReceiptController {
         return receiptService.getAllReceipts(); 
     }
 
-    @GetMapping
+    @GetMapping("/{id}")
     public Receipt getReceiptById(@PathVariable UUID id) {
         return receiptService.getReceiptById(id);
     }
