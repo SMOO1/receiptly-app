@@ -1,4 +1,4 @@
-package model;
+package com.receiptly.receiptly_backend.model;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;

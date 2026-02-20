@@ -3,8 +3,9 @@ package com.receiptly.receiptly_backend.service;
 import java.util.List;
 import java.util.UUID; 
 import org.springframework.stereotype.Service;
+
+import com.receiptly.receiptly_backend.model.Receipt;
 import com.receiptly.receiptly_backend.repository.ReceiptRepository;
-import model.Receipt;
 
 @Service
 public class ReceiptService {

@@ -3,10 +3,9 @@ package com.receiptly.receiptly_backend.controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.receiptly.receiptly_backend.model.Receipt;
 import com.receiptly.receiptly_backend.repository.ReceiptRepository;
 import com.receiptly.receiptly_backend.service.ReceiptService;
-
-import model.Receipt;
 
 import java.io.File;
 import java.io.IOException;
