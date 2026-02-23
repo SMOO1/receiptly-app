@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Receiptly",
+    "slug": "receiptly",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#10B981"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.receiptly.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Receiptly needs camera access to scan receipts.",
+        "NSPhotoLibraryUsageDescription": "Receiptly needs photo library access to upload receipt images."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#10B981"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.receiptly.app",
+      "permissions": ["CAMERA"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
