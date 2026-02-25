@@ -1,13 +1,14 @@
+// frontend/src/services/api.ts
 // Receiptly API Service
 // @author Zidane Virani
 
+import { Platform } from 'react-native';
 import { Receipt } from '../types';
 
-const API_BASE = 'http://10.0.2.2:8080/api'; // Android emulator localhost
-// Use 'http://localhost:8080/api' for iOS simulator
-
 const API_URL = __DEV__
-  ? 'http://localhost:8080/api'
+  ? Platform.OS === 'android'
+    ? 'http://10.39.4.52:8080/api'
+    : 'http://localhost:8080/api'
   : 'https://your-production-api.com/api';
 
 class ApiService {
@@ -42,6 +43,11 @@ class ApiService {
       );
     }
 
+    // Handle 204 No Content (e.g. DELETE)
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
     return response.json();
   }
 
@@ -71,7 +77,7 @@ class ApiService {
   }
 
   async deleteReceipt(id: string): Promise<void> {
-    await this.request(`/receipts/${id}`, { method: 'DELETE' });
+    await this.request<void>(`/receipts/${id}`, { method: 'DELETE' });
   }
 
   async uploadReceipt(imageUri: string): Promise<Receipt> {
