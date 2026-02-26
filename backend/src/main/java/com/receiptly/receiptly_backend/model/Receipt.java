@@ -3,6 +3,8 @@ package com.receiptly.receiptly_backend.model;
 import jakarta.persistence.*;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "receipts")
 public class Receipt {
@@ -18,6 +20,7 @@ public class Receipt {
 
     @Lob
     @Column(columnDefinition = "BYTEA")
+    @JsonIgnore
     private byte[] imageData;
 
     private String imageType;

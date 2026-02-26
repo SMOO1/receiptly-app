@@ -45,7 +45,7 @@ public class ReceiptController {
         Receipt receipt = new Receipt();
         receipt.setImageData(file.getBytes());
         receipt.setImageType(file.getContentType());
-        receipt.setImage_url("/api/receipts/{id}/image"); // placeholder, updated after save
+        receipt.setImage_url("/api/receipts/{id}/image"); 
         Receipt saved = receiptService.createreceipt(receipt);
         saved.setImage_url("/api/receipts/" + saved.getId() + "/image");
         return receiptService.updateReceipt(saved.getId(), saved);
