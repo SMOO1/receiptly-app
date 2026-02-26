@@ -36,6 +36,11 @@ public class ReceiptService {
         existing.setDate(updated.getDate());
         existing.setTotal(updated.getTotal());
         existing.setImage_url(updated.getImage_url());
+        // Preserve image
+        if (updated.getImageData() != null) {
+            existing.setImageData(updated.getImageData());
+            existing.setImageType(updated.getImageType());
+        }
         return receiptRepository.save(existing);
     }
 

@@ -16,6 +16,12 @@ public class Receipt {
     private Double total;
     private String image_url;
 
+    @Lob
+    @Column(columnDefinition = "BYTEA")
+    private byte[] imageData;
+
+    private String imageType;
+
     // Default constructor required by JPA
     public Receipt() {}
 
@@ -33,4 +39,10 @@ public class Receipt {
 
     public String getImage_url() { return image_url; }
     public void setImage_url(String image_url) { this.image_url = image_url; }
+
+    public byte[] getImageData() { return imageData; }
+    public void setImageData(byte[] imageData) { this.imageData = imageData; }
+
+    public String getImageType() { return imageType; }
+    public void setImageType(String imageType) { this.imageType = imageType; }
 }
