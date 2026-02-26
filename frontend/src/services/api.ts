@@ -5,9 +5,11 @@
 import { Platform } from 'react-native';
 import { Receipt } from '../types';
 
+const LOCAL_IP = "10.39.4.52";
+
 const API_URL = __DEV__
   ? Platform.OS === 'android'
-    ? 'http://10.39.4.52:8080/api'
+    ? 'http://{LOCAL_IP}:8080/api'
     : 'http://localhost:8080/api'
   : 'https://your-production-api.com/api';
 
