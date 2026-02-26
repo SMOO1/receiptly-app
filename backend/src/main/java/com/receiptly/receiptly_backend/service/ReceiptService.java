@@ -3,7 +3,9 @@ package com.receiptly.receiptly_backend.service;
 import com.receiptly.receiptly_backend.model.Receipt;
 import com.receiptly.receiptly_backend.repository.ReceiptRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,6 +31,19 @@ public class ReceiptService {
         return receiptRepository.save(receipt);
     }
 
+    public Receipt createReceiptWithImage(MultipartFile file) throws IOException {
+        Receipt receipt = new Receipt();
+        receipt.setImageData(file.getBytes());
+        receipt.setImageType(file.getContentType());
+
+        // Save first to get the generated ID
+        Receipt saved = receiptRepository.save(receipt);
+
+        // Now set the image URL with the real ID
+        saved.setImage_url("/api/receipts/" + saved.getId() + "/image");
+        return receiptRepository.save(saved);
+    }
+
     public Receipt updateReceipt(UUID id, Receipt updated) {
         Receipt existing = receiptRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Receipt not found with id: " + id));
@@ -36,7 +51,6 @@ public class ReceiptService {
         existing.setDate(updated.getDate());
         existing.setTotal(updated.getTotal());
         existing.setImage_url(updated.getImage_url());
-        // Preserve image
         if (updated.getImageData() != null) {
             existing.setImageData(updated.getImageData());
             existing.setImageType(updated.getImageType());

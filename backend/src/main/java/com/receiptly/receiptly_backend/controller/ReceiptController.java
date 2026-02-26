@@ -42,13 +42,7 @@ public class ReceiptController {
 
     @PostMapping("/upload")
     public Receipt uploadReceipt(@RequestParam("file") MultipartFile file) throws IOException {
-        Receipt receipt = new Receipt();
-        receipt.setImageData(file.getBytes());
-        receipt.setImageType(file.getContentType());
-        receipt.setImage_url("/api/receipts/{id}/image"); 
-        Receipt saved = receiptService.createreceipt(receipt);
-        saved.setImage_url("/api/receipts/" + saved.getId() + "/image");
-        return receiptService.updateReceipt(saved.getId(), saved);
+        return receiptService.createReceiptWithImage(file);
     }
 
     @GetMapping("/{id}/image")
