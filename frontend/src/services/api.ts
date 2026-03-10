@@ -74,6 +74,11 @@ class ApiService {
     await this.request(`/receipts/${id}`, { method: 'DELETE' });
   }
 
+  async getSignedUrl(id: string): Promise<string> {
+    const data = await this.request<{ signedUrl: string }>(`/receipts/${id}/signed-url`);
+    return data.signedUrl;
+  }
+
   async uploadReceipt(imageUri: string): Promise<Receipt> {
     const formData = new FormData();
     const filename = imageUri.split('/').pop() || 'receipt.jpg';

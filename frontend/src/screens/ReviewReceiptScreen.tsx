@@ -1,6 +1,6 @@
 // @author Zidane Virani
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -35,6 +35,27 @@ export default function ReviewReceiptScreen() {
     existingReceipt?.total?.toString() || ''
   );
   const [saving, setSaving] = useState(false);
+  const [signedImageUrl, setSignedImageUrl] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState(false);
+
+  useEffect(() => {
+    if (existingReceipt?.id && existingReceipt?.image_url) {
+      console.log('[Image] existingReceipt.image_url (objectPath):', existingReceipt.image_url);
+      setImageLoading(true);
+      api.getSignedUrl(existingReceipt.id)
+        .then(url => {
+          console.log('[Image] signed URL received:', url);
+          setSignedImageUrl(url);
+        })
+        .catch(err => {
+          console.error('[Image] failed to get signed URL:', err);
+          setSignedImageUrl(null);
+        })
+        .finally(() => setImageLoading(false));
+    } else {
+      console.log('[Image] imageUri (local):', imageUri);
+    }
+  }, [existingReceipt?.id, existingReceipt?.image_url]);
 
   async function handleSave() {
     if (!vendor.trim()) {
@@ -83,7 +104,8 @@ export default function ReviewReceiptScreen() {
     }
   }
 
-  const previewUri = existingReceipt?.image_url || imageUri;
+  const previewUri = signedImageUrl || imageUri || null;
+  const hasImage = !!previewUri && previewUri.length > 0;
 
   return (
     <ScrollView
@@ -91,11 +113,21 @@ export default function ReviewReceiptScreen() {
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
-      {previewUri ? (
-        <Image source={{ uri: previewUri }} style={styles.image} />
+      {imageLoading ? (
+        <View style={styles.imagePlaceholder}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      ) : hasImage ? (
+        <Image
+          source={{ uri: previewUri! }}
+          style={styles.image}
+          onLoad={() => console.log('[Image] loaded successfully:', previewUri)}
+          onError={(e) => console.error('[Image] failed to load:', e.nativeEvent.error, 'URI:', previewUri)}
+        />
       ) : (
         <View style={styles.imagePlaceholder}>
-          <Ionicons name="receipt-outline" size={40} color={colors.textLight} />
+          <Ionicons name="image-outline" size={40} color={colors.textLight} />
+          <Text style={styles.imagePlaceholderText}>No image available</Text>
         </View>
       )}
 
@@ -201,6 +233,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  imagePlaceholderText: {
+    fontSize: fontSize.sm,
+    color: colors.textLight,
+    marginTop: spacing.sm,
   },
   sectionTitle: {
     fontSize: fontSize.xl,

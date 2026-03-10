@@ -39,6 +39,22 @@ public class ReceiptController {
         return receiptService.getReceiptById(id);
     }
 
+    @GetMapping("/{id}/signed-url")
+    public ResponseEntity<?> getSignedUrl(@PathVariable UUID id) {
+        try {
+            Receipt receipt = receiptService.getReceiptById(id);
+            String objectPath = receipt.getImage_url();
+            if (objectPath == null || objectPath.isBlank()) {
+                return ResponseEntity.ok(java.util.Map.of("signedUrl", ""));
+            }
+            String signedUrl = storageService.getSignedUrl(objectPath, 3600);
+            return ResponseEntity.ok(java.util.Map.of("signedUrl", signedUrl));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
     @PutMapping("/{id}")
     public Receipt updateReceipt(@PathVariable UUID id, @RequestBody Receipt receipt) {
         return receiptService.updateReceipt(id, receipt);

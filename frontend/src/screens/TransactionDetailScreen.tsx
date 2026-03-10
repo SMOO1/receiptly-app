@@ -1,6 +1,6 @@
 // @author Zidane Virani
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Image,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,27 @@ export default function TransactionDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute<DetailRoute>();
   const { receipt } = route.params;
+  const [signedImageUrl, setSignedImageUrl] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState(false);
+
+  useEffect(() => {
+    if (receipt.image_url) {
+      console.log('[Image] receipt.image_url (objectPath):', receipt.image_url);
+      setImageLoading(true);
+      api.getSignedUrl(receipt.id)
+        .then(url => {
+          console.log('[Image] signed URL received:', url);
+          setSignedImageUrl(url);
+        })
+        .catch(err => {
+          console.error('[Image] failed to get signed URL:', err);
+          setSignedImageUrl(null);
+        })
+        .finally(() => setImageLoading(false));
+    } else {
+      console.log('[Image] no image_url on receipt, skipping signed URL fetch');
+    }
+  }, [receipt.id, receipt.image_url]);
 
   const formattedDate = new Date(receipt.date).toLocaleDateString('en-US', {
     weekday: 'long',
@@ -57,8 +79,17 @@ export default function TransactionDetailScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
     >
-      {receipt.image_url ? (
-        <Image source={{ uri: receipt.image_url }} style={styles.image} />
+      {imageLoading ? (
+        <View style={styles.imagePlaceholder}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      ) : signedImageUrl ? (
+        <Image
+          source={{ uri: signedImageUrl }}
+          style={styles.image}
+          onLoad={() => console.log('[Image] loaded successfully:', signedImageUrl)}
+          onError={(e) => console.error('[Image] failed to load:', e.nativeEvent.error, 'URI:', signedImageUrl)}
+        />
       ) : (
         <View style={styles.imagePlaceholder}>
           <Ionicons name="image-outline" size={48} color={colors.textLight} />
