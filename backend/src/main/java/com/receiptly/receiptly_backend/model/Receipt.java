@@ -19,17 +19,22 @@ public class Receipt {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = true)
     private OffsetDateTime created_at;
 
-    @Column(name = "user_id")
+    @Column(name = "user_id", nullable = true)
     private UUID user_id;
 
+    @Column(name = "vendor", nullable = true)
     private String vendor;
+
+    @Column(name = "date", nullable = true)
     private LocalDate date;
+
+    @Column(name = "total", nullable = true)
     private Float total;
 
-    @Column(name = "image_url")
+    @Column(name = "image_url", nullable = true, columnDefinition = "text")
     private String image_url;
 
     public Receipt() {}

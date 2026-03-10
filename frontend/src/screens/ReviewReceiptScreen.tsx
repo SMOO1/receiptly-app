@@ -48,18 +48,29 @@ export default function ReviewReceiptScreen() {
 
     setSaving(true);
     try {
+      let finalImageUrl = existingReceipt?.image_url || '';
+
+      // If we have a local image URI (not already a remote URL), upload it first
+      if (imageUri && !imageUri.startsWith('http')) {
+        const uploaded = await api.uploadReceipt(imageUri);
+        finalImageUrl = uploaded.image_url;
+      } else if (imageUri) {
+        finalImageUrl = imageUri;
+      }
+
       if (existingReceipt?.id) {
         await api.updateReceipt(existingReceipt.id, {
           vendor: vendor.trim(),
           date,
           total: parseFloat(total),
+          image_url: finalImageUrl,
         });
       } else {
         await api.createReceipt({
           vendor: vendor.trim(),
           date,
           total: parseFloat(total),
-          image_url: imageUri || '',
+          image_url: finalImageUrl,
         });
       }
       Alert.alert('Success', 'Receipt saved successfully!', [

@@ -28,4 +28,19 @@ public class ReceiptService {
     public Receipt getReceiptById(UUID id){
         return receiptRepository.findById(id).orElseThrow(() -> new RuntimeException("Receipt not found"));
     }
+
+    public Receipt updateReceipt(UUID id, Receipt updated) {
+        Receipt existing = getReceiptById(id);
+        existing.setVendor(updated.getVendor());
+        existing.setDate(updated.getDate());
+        existing.setTotal(updated.getTotal());
+        if (updated.getImage_url() != null) {
+            existing.setImage_url(updated.getImage_url());
+        }
+        return receiptRepository.save(existing);
+    }
+
+    public void deleteReceipt(UUID id) {
+        receiptRepository.deleteById(id);
+    }
 }

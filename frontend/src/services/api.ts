@@ -90,15 +90,16 @@ class ApiService {
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
-
-    const response = await fetch(`${API_URL}/receipts/upload`, {
+    // Do NOT set Content-Type — fetch will set it with the correct boundary
+    const response = await fetch(`${API_URL}/upload`, {
       method: 'POST',
       headers,
       body: formData,
     });
 
     if (!response.ok) {
-      throw new Error(`Upload failed: ${response.status}`);
+      const text = await response.text();
+      throw new Error(`Upload failed: ${response.status} ${text}`);
     }
 
     return response.json();
