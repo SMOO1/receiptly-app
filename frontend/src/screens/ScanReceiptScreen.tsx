@@ -72,7 +72,7 @@ export default function ScanReceiptScreen() {
     setUploading(true);
     try {
       const receipt = await api.uploadReceipt(imageUri);
-      navigation.navigate('ReviewReceipt', { receipt });
+      navigation.navigate('ReviewReceipt', { receipt, imageUri });
     } catch {
       // If upload endpoint isn't ready, navigate with just the image
       navigation.navigate('ReviewReceipt', { imageUri });
