@@ -8,9 +8,12 @@ import com.receiptly.receiptly_backend.model.Receipt;
 import com.receiptly.receiptly_backend.service.GoogleVisionService;
 import com.receiptly.receiptly_backend.service.ReceiptService;
 import com.receiptly.receiptly_backend.service.SupabaseStorageService;
+import com.receiptly.receiptly_backend.repository.UserSettingsRepository;
+import com.receiptly.receiptly_backend.service.GoogleSheetsService;
 
 import java.time.LocalDate;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 @RestController
@@ -22,21 +25,40 @@ public class ReceiptUploadController {
     private final ReceiptService receiptService;
     private final SupabaseStorageService storageService;
     private final GoogleVisionService visionService;
+    private final UserSettingsRepository userSettingsRepository;
+    private final GoogleSheetsService sheetsService;
 
-    public ReceiptUploadController(ReceiptService receiptService, SupabaseStorageService storageService, GoogleVisionService visionService) {
+    public ReceiptUploadController(ReceiptService receiptService, SupabaseStorageService storageService, GoogleVisionService visionService, UserSettingsRepository userSettingsRepository, GoogleSheetsService sheetsService) {
         this.receiptService = receiptService;
         this.storageService = storageService;
         this.visionService = visionService;
+        this.userSettingsRepository = userSettingsRepository;
+        this.sheetsService = sheetsService;
     }
 
     @PostMapping(consumes = "multipart/form-data")
-    public ResponseEntity<?> uploadReceipt(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadReceipt(
+            @RequestParam("file") MultipartFile file,
+            @RequestHeader(value = "X-User-Id", required = false) String userIdStr) {
         try {
+            // Parse user ID
+            UUID userId = null;
+            if (userIdStr != null && !userIdStr.isEmpty()) {
+                if (userIdStr.equals("demo-user-id")) {
+                    userId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+                } else {
+                    try {
+                        userId = UUID.fromString(userIdStr);
+                    } catch (Exception ignored) {}
+                }
+            }
+
             String imageUrl = storageService.upload(file);
             logger.info("[Upload] Image uploaded successfully: " + imageUrl);
             
             Receipt receipt = new Receipt();
             receipt.setImage_url(imageUrl);
+            receipt.setUser_id(userId);
             
             // Try OCR but don't fail if it doesn't work
             try {
@@ -66,6 +88,19 @@ public class ReceiptUploadController {
             
             Receipt saved = receiptService.createreceipt(receipt);
             logger.info("[Upload] Receipt saved with ID: " + saved.getId());
+            
+            // Auto Export to Google Sheets
+            if (userId != null) {
+                userSettingsRepository.findById(userId).ifPresent(settings -> {
+                    if (Boolean.TRUE.equals(settings.getAutoExport()) && settings.getGoogleSheetId() != null) {
+                        logger.info("[Upload] Auto-exporting to Google Sheets...");
+                        new Thread(() -> {
+                            sheetsService.appendReceiptRow(settings.getGoogleSheetId(), saved);
+                        }).start();
+                    }
+                });
+            }
+
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
             logger.severe("[Upload] Upload failed: " + e.getMessage());

@@ -70,17 +70,19 @@ export default function ReviewReceiptScreen() {
     setSaving(true);
     try {
       let finalImageUrl = existingReceipt?.image_url || '';
+      let receiptId = existingReceipt?.id;
 
-      // If we have a local image URI (not already a remote URL), upload it first
-      if (imageUri && !imageUri.startsWith('http')) {
+      // If we have a local image URI and no receipt was created yet, upload it
+      if (!receiptId && imageUri && !imageUri.startsWith('http')) {
         const uploaded = await api.uploadReceipt(imageUri);
         finalImageUrl = uploaded.image_url;
-      } else if (imageUri) {
+        receiptId = uploaded.id;
+      } else if (!receiptId && imageUri) {
         finalImageUrl = imageUri;
       }
 
-      if (existingReceipt?.id) {
-        await api.updateReceipt(existingReceipt.id, {
+      if (receiptId) {
+        await api.updateReceipt(receiptId, {
           vendor: vendor.trim(),
           date,
           total: parseFloat(total),

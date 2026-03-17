@@ -1,6 +1,6 @@
 // @author Zidane Virani
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,37 +10,118 @@ import {
   TextInput,
   Switch,
   Alert,
-  Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { colors, fontSize, spacing, borderRadius } from '../theme';
+import { api } from '../services/api';
 
 export default function SettingsScreen() {
   const { user, signOut } = useAuth();
-  const [sheetsUrl, setSheetsUrl] = useState('');
-  const [sheetsConnected, setSheetsConnected] = useState(false);
+  const [sheetUrl, setSheetUrl] = useState('');
+  const [sheetId, setSheetId] = useState<string | null>(null);
   const [autoExport, setAutoExport] = useState(false);
   const [notifications, setNotifications] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [serviceEmail, setServiceEmail] = useState('');
 
-  function handleConnectSheets() {
-    if (!sheetsUrl.trim()) {
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  async function loadSettings() {
+    try {
+      const response = await api.getUserSettings();
+      setSheetId(response.settings.googleSheetId);
+      setAutoExport(response.settings.autoExport);
+      setServiceEmail(response.serviceAccountEmail);
+    } catch (e) {
+      console.error('Failed to load settings:', e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleConnectSheets() {
+    if (!sheetUrl.trim()) {
       Alert.alert(
         'Google Sheets URL',
         'Please enter your Google Sheets URL to connect.'
       );
       return;
     }
-
-    // Simulate connection
-    setSheetsConnected(true);
-    Alert.alert('Connected!', 'Google Sheets linked successfully.');
+    setIsProcessing(true);
+    try {
+      const settings = await api.connectGoogleSheet('link', sheetUrl);
+      setSheetId(settings.googleSheetId);
+      setAutoExport(settings.autoExport);
+      Alert.alert('Connected!', 'Google Sheets linked successfully.');
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to connect sheet.');
+    } finally {
+      setIsProcessing(false);
+    }
   }
 
-  function handleDisconnectSheets() {
-    setSheetsConnected(false);
-    setSheetsUrl('');
-    setAutoExport(false);
+  async function handleCreateSheet() {
+    setIsProcessing(true);
+    try {
+      const settings = await api.connectGoogleSheet('create');
+      setSheetId(settings.googleSheetId);
+      setAutoExport(settings.autoExport);
+      Alert.alert('Created!', 'A new Google Sheet was created and linked. Check your Google Drive!');
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to create sheet.');
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
+  async function handleDisconnectSheets() {
+    Alert.alert('Disconnect', 'Are you sure you want to disconnect Google Sheets?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Disconnect',
+        style: 'destructive',
+        onPress: async () => {
+          setIsProcessing(true);
+          try {
+            await api.connectGoogleSheet('disconnect');
+            setSheetId(null);
+            setSheetUrl('');
+            setAutoExport(false);
+          } catch (e: any) {
+            Alert.alert('Error', e.message || 'Failed to disconnect.');
+          } finally {
+            setIsProcessing(false);
+          }
+        },
+      },
+    ]);
+  }
+
+  async function handleToggleAutoExport(val: boolean) {
+    setAutoExport(val);
+    try {
+      await api.updateUserSettings(val);
+    } catch (e: any) {
+      Alert.alert('Error', 'Failed to update auto-export settings.');
+      setAutoExport(!val);
+    }
+  }
+
+  async function handleSyncAllReceipts() {
+    setIsProcessing(true);
+    try {
+      const response = await api.syncAllReceipts();
+      Alert.alert('Sync Started', response.message);
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to sync receipts.');
+    } finally {
+      setIsProcessing(false);
+    }
   }
 
   function handleSignOut() {
@@ -48,6 +129,14 @@ export default function SettingsScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign Out', style: 'destructive', onPress: signOut },
     ]);
+  }
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
   }
 
   return (
@@ -88,10 +177,10 @@ export default function SettingsScreen() {
             <View style={styles.sheetsInfo}>
               <Text style={styles.sheetsTitle}>Google Sheets</Text>
               <Text style={styles.sheetsStatus}>
-                {sheetsConnected ? 'Connected' : 'Not connected'}
+                {sheetId ? 'Connected' : 'Not connected'}
               </Text>
             </View>
-            {sheetsConnected && (
+            {sheetId && (
               <View style={styles.connectedBadge}>
                 <Ionicons
                   name="checkmark-circle"
@@ -102,12 +191,33 @@ export default function SettingsScreen() {
             )}
           </View>
 
-          {!sheetsConnected ? (
+          {isProcessing ? (
+            <ActivityIndicator size="small" color="#34A853" style={{ marginVertical: spacing.md }} />
+          ) : !sheetId ? (
             <>
+              {serviceEmail ? (
+                <View style={styles.instructionBox}>
+                  <Text style={styles.instructionTitle}>To link an existing sheet:</Text>
+                  <Text style={styles.instructionText}>
+                    1. Open your Google Sheet
+                  </Text>
+                  <Text style={styles.instructionText}>
+                    2. Click "Share" and invite:
+                  </Text>
+                  <Text style={styles.serviceEmailText} selectable>{serviceEmail}</Text>
+                  <Text style={styles.instructionText}>
+                    3. Ensure they have "Editor" access.
+                  </Text>
+                  <Text style={styles.instructionText}>
+                    4. Paste the URL below:
+                  </Text>
+                </View>
+              ) : null}
+
               <TextInput
                 style={styles.sheetsInput}
-                value={sheetsUrl}
-                onChangeText={setSheetsUrl}
+                value={sheetUrl}
+                onChangeText={setSheetUrl}
                 placeholder="Paste Google Sheets URL"
                 placeholderTextColor={colors.textLight}
                 autoCapitalize="none"
@@ -117,7 +227,17 @@ export default function SettingsScreen() {
                 onPress={handleConnectSheets}
               >
                 <Ionicons name="link" size={18} color="#FFFFFF" />
-                <Text style={styles.connectText}>Connect</Text>
+                <Text style={styles.connectText}>Connect Existing</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.orText}>- OR -</Text>
+
+              <TouchableOpacity
+                style={styles.createButton}
+                onPress={handleCreateSheet}
+              >
+                <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
+                <Text style={styles.createText}>Create New Sheet</Text>
               </TouchableOpacity>
             </>
           ) : (
@@ -125,8 +245,15 @@ export default function SettingsScreen() {
               <SettingRow
                 label="Auto-export new receipts"
                 value={autoExport}
-                onToggle={setAutoExport}
+                onToggle={handleToggleAutoExport}
               />
+              <TouchableOpacity
+                style={styles.syncButton}
+                onPress={handleSyncAllReceipts}
+              >
+                <Ionicons name="sync-outline" size={18} color="#FFFFFF" />
+                <Text style={styles.syncText}>Sync All Receipts Now</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.disconnectButton}
                 onPress={handleDisconnectSheets}
@@ -161,7 +288,7 @@ export default function SettingsScreen() {
           <View style={styles.divider} />
           <View style={styles.aboutRow}>
             <Text style={styles.aboutLabel}>Built by</Text>
-            <Text style={styles.aboutValue}>Zidane Virani</Text>
+            <Text style={styles.aboutValue}>Sasha Muravyev & Zidane Virani</Text>
           </View>
         </View>
       </View>
@@ -317,6 +444,65 @@ const styles = StyleSheet.create({
     height: 44,
   },
   connectText: {
+    color: '#FFFFFF',
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+  },
+  orText: {
+    textAlign: 'center',
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    marginVertical: spacing.sm,
+  },
+  createButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primaryLight,
+    borderRadius: borderRadius.sm,
+    height: 44,
+  },
+  createText: {
+    color: colors.primary,
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+  },
+  instructionBox: {
+    backgroundColor: '#F3F4F6',
+    padding: spacing.md,
+    borderRadius: borderRadius.sm,
+    marginBottom: spacing.md,
+  },
+  instructionTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  instructionText: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  serviceEmailText: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    color: colors.primary,
+    marginVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+  },
+  syncButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: '#34A853',
+    borderRadius: borderRadius.sm,
+    height: 44,
+    marginTop: spacing.md,
+  },
+  syncText: {
     color: '#FFFFFF',
     fontSize: fontSize.sm,
     fontWeight: '600',

@@ -45,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (token && userJson) {
         const user = JSON.parse(userJson);
         api.setToken(token);
+        api.setUser(user);
         setState({
           user,
           token,
@@ -70,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = 'demo-token';
 
     api.setToken(token);
+    api.setUser(user);
     await AsyncStorage.setItem('auth_token', token);
     await AsyncStorage.setItem('user', JSON.stringify(user));
 
@@ -85,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = 'demo-token';
 
     api.setToken(token);
+    api.setUser(user);
     await AsyncStorage.setItem('auth_token', token);
     await AsyncStorage.setItem('user', JSON.stringify(user));
 
@@ -93,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signOut() {
     api.setToken(null);
+    api.setUser(null);
     await AsyncStorage.multiRemove(['auth_token', 'user']);
     setState({ user: null, token: null, isLoading: false, isOnboarded: false });
   }
