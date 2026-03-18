@@ -182,6 +182,22 @@ public class GoogleSheetsService {
         return null;
     }
 
+    private Integer getSheetIdByTitle(String spreadsheetId, String title) throws Exception {
+        Spreadsheet spreadsheet = sheetsService.spreadsheets()
+                .get(spreadsheetId)
+                .setFields("sheets.properties(sheetId,title)")
+                .execute();
+
+        if (spreadsheet.getSheets() == null) return null;
+        for (Sheet sheet : spreadsheet.getSheets()) {
+            SheetProperties props = sheet.getProperties();
+            if (props != null && title.equals(props.getTitle())) {
+                return props.getSheetId();
+            }
+        }
+        return null;
+    }
+
     public void updateReceiptRow(String spreadsheetId, Receipt receipt) {
         if (sheetsService == null || receipt.getId() == null) return;
         
@@ -225,15 +241,33 @@ public class GoogleSheetsService {
                 logger.info("[GoogleSheets] Receipt " + receiptId + " not found in sheet, nothing to delete");
                 return;
             }
+            if (rowIndex <= 1) {
+                logger.warning("[GoogleSheets] Refusing to delete header row for receiptId=" + receiptId);
+                return;
+            }
 
-            String range = String.format("Sheet1!A%d:E%d", rowIndex, rowIndex);
-            ClearValuesRequest requestBody = new ClearValuesRequest();
-            
-            sheetsService.spreadsheets().values()
-                    .clear(spreadsheetId, range, requestBody)
-                    .execute();
-                    
-            logger.info("[GoogleSheets] Cleared receipt " + receiptId + " at row " + rowIndex);
+            Integer sheetId = getSheetIdByTitle(spreadsheetId, "Sheet1");
+            if (sheetId == null) {
+                throw new IllegalStateException("Could not resolve sheetId for Sheet1");
+            }
+
+            // Sheets API uses 0-based, end-exclusive indices for dimensions.
+            int startIndex = rowIndex - 1;
+            int endIndex = rowIndex;
+
+            DeleteDimensionRequest deleteDimensionRequest = new DeleteDimensionRequest()
+                    .setRange(new DimensionRange()
+                            .setSheetId(sheetId)
+                            .setDimension("ROWS")
+                            .setStartIndex(startIndex)
+                            .setEndIndex(endIndex));
+
+            BatchUpdateSpreadsheetRequest batchRequest = new BatchUpdateSpreadsheetRequest()
+                    .setRequests(Collections.singletonList(new Request().setDeleteDimension(deleteDimensionRequest)));
+
+            sheetsService.spreadsheets().batchUpdate(spreadsheetId, batchRequest).execute();
+
+            logger.info("[GoogleSheets] Deleted receipt " + receiptId + " at row " + rowIndex + " (shifted rows up)");
         } catch (Exception e) {
             logger.severe("[GoogleSheets] Failed to delete row: " + e.getMessage());
         }
